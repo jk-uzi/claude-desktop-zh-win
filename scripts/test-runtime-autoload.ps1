@@ -164,6 +164,7 @@ function Invoke-Adapter {
   $adapterArgs=@($bundle.sourceExecutable,$bundle.payload,$bundle.payloadSha256,$bundle.successMarker,'25000')
   if ($bundle.version -eq 2) { $adapterArgs+=@($bundle.catalogFile,$bundle.catalogSha256) }
   if ($ParentProcessId) { $adapterArgs+=@('--parent',$ParentProcessId.ToString(),$parentStartedTicks.ToString(),$ParentExecutable,'--registry',$RegistryFile,$RegistrySha256) }
+  if ($script:windowContext) { $adapterArgs+=@('--window-handle',$script:windowContext.windowHandle.ToString()) }
   if ($ActivateClaude -and !$script:windowContext) { $adapterArgs+=@('--activate-claude') }
   $raw=& $native @adapterArgs
   $result=$raw | ConvertFrom-Json
