@@ -69,6 +69,19 @@ function Get-ClaudeWindowHandles {
   if ($pids.Count -eq 0) { return @() }
   return @([ClaudeZhWindows]::Find($pids))
 }
+# A settings renderer is identified by its search field, not by any visible
+# text: chat transcripts may quote the English headings below.
+function Test-SettingsWindow([IntPtr]$Handle) {
+  try {
+    $element=[Windows.Automation.AutomationElement]::FromHandle($Handle)
+    if (!$element) { return $false }
+    $condition=New-Object Windows.Automation.PropertyCondition([Windows.Automation.AutomationElement]::ControlTypeProperty,[Windows.Automation.ControlType]::Edit)
+    foreach ($edit in $element.FindAll([Windows.Automation.TreeScope]::Descendants,$condition)) {
+      if ($edit.Current.Name -eq 'Search settings') { return $true }
+    }
+  } catch { return $false }
+  return $false
+}
 function Focus-ClaudeWindow([IntPtr]$Handle) {
   if ([ClaudeZhWindows]::GetForegroundWindow() -eq $Handle) { return $true }
   [void][ClaudeZhWindows]::SetForegroundWindow($Handle)
@@ -269,16 +282,19 @@ if ($ApplyOnce) {
       foreach ($handle in $handles) {
         $key=[string][int64]$handle
         if ($windowCooldown.ContainsKey($key) -and (Get-Date) -lt $windowCooldown[$key]) { continue }
+        if (!(Test-SettingsWindow $handle)) { continue }
         $marker=$null
         if (Find-ClaudeWindowText $handle 'Configure third-party inference') { $marker='Configure third-party inference' }
         elseif (Find-ClaudeWindowText $handle 'Search settings') { $marker='Search settings' }
         if (!$marker) { continue }
-        if (!(Focus-ClaudeWindow $handle)) { $windowCooldown[$key]=(Get-Date).AddSeconds(30); continue }
-        $windowCooldown[$key]=(Get-Date).AddSeconds(300)
+        if (!(Focus-ClaudeWindow $handle)) { $windowCooldown[$key]=(Get-Date).AddSeconds(10); continue }
+        # A failed or superseded attempt must not lock the window out for minutes.
+        $windowCooldown[$key]=(Get-Date).AddSeconds(15)
         $script:windowContext=@{ windowHandle=[int64]$handle; windowMarker=$marker }
         try {
           $result=Invoke-Adapter
           if ($result.scriptSubmitted) { $windowCooldown[$key]=(Get-Date).AddSeconds(60) }
+          else { $windowCooldown[$key]=(Get-Date).AddSeconds(10) }
           if ($result.scriptSubmitted -or $result.state -eq 'AdapterError') { Write-Output ($result | ConvertTo-Json -Compress) }
         } finally { $script:windowContext=$null }
       }
