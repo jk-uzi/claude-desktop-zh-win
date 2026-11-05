@@ -62,10 +62,6 @@ public static class RuntimeConsoleBridge {
     [DllImport("user32.dll")] static extern uint GetWindowThreadProcessId(IntPtr handle, out uint process);
     [DllImport("user32.dll")] static extern IntPtr GetForegroundWindow();
     [DllImport("user32.dll")] static extern bool SetForegroundWindow(IntPtr handle);
-    [DllImport("user32.dll")] static extern bool SetWindowPos(IntPtr handle, IntPtr after, int x, int y, int cx, int cy, uint flags);
-    [DllImport("user32.dll")] static extern int GetWindowLong(IntPtr handle, int index);
-    [DllImport("user32.dll")] static extern int SetWindowLong(IntPtr handle, int index, int value);
-    [DllImport("user32.dll")] static extern bool SetLayeredWindowAttributes(IntPtr handle, uint color, byte alpha, uint flags);
     [DllImport("user32.dll")] static extern uint SendInput(uint count, INPUT[] input, int size);
     [DllImport("user32.dll")] static extern short GetAsyncKeyState(int key);
     [DllImport("user32.dll")] static extern bool PostMessage(IntPtr handle, uint message, IntPtr w, IntPtr l);
@@ -117,15 +113,6 @@ public static class RuntimeConsoleBridge {
     }
     public static bool MayWrite(bool sameProcess, bool sameFocus, bool editable, string name, string existing,string template=null,string marker=null) {
         return sameProcess && sameFocus && editable && ConsolePrompt(name) && (EmptyPrompt(existing) || OwnPendingPayload(existing,template,marker));
-    }
-    // DevTools is the only supported injection surface, but its window need not
-    // be visible: move it past every monitor and make it fully transparent so it
-    // still holds focus and accepts input while the user sees nothing.
-    static void ConcealWindow(IntPtr handle) {
-        int style=GetWindowLong(handle,-20);
-        if((style & 0x80000)==0) SetWindowLong(handle,-20,style|0x80000);
-        SetLayeredWindowAttributes(handle,0,0,2);
-        SetWindowPos(handle,IntPtr.Zero,-32000,-32000,0,0,0x0001|0x0004|0x0010);
     }
     // Close only the DevTools window this invocation opened, whether it
     // succeeded or lost focus, so a later injection cannot reuse it.
@@ -524,7 +511,6 @@ public static class RuntimeConsoleBridge {
             Thread.Sleep(150); if(!Identity(process,exe,started))return "ApplicationExited";
             if(Pid(GetForegroundWindow())!=pid)return "FocusChanged";
             tools=Tools(pid);
-            foreach(IntPtr tool in tools)if(!priorTools.Contains(tool))ConcealWindow(tool);
             added=secondary?tools.FindAll(tool=>!priorTools.Contains(tool)):tools;
             if(added.Count==0 && !menuAttempted && clock.ElapsedMilliseconds>=3000) {
                 menuAttempted=true; devToolsOpenMethod="Menu";
@@ -533,7 +519,6 @@ public static class RuntimeConsoleBridge {
                     if(failure!=null)return failure;
                 }
                 tools=Tools(pid);
-                foreach(IntPtr tool in tools)if(!priorTools.Contains(tool))ConcealWindow(tool);
                 added=secondary?tools.FindAll(tool=>!priorTools.Contains(tool)):tools;
             }
         }
