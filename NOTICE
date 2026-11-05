@@ -1,0 +1,19 @@
+This project is not affiliated with Anthropic, CC Switch, or magpie.
+
+It is derived from claude-desktop-zh by polang233
+(https://github.com/polang233/claude-desktop-zh) and the 0.2.x
+runtime fork by liwenjinchn (https://github.com/liwenjinchn/claude-desktop-zh),
+both distributed under the MIT license. Windows asar-layout support, the
+secondary settings-window injection, catalog key remapping and this fork's
+packaging changes are maintained by jk-uzi.
+
+The MIT license covers this project's code, documentation and original mascot artwork.
+Claude Desktop and official translation resources belong to their respective
+rights holders. Runtime catalog imports are stored locally in .catalogs and
+are not included in the source repository or the npm file list. Do not treat
+availability at a public URL as a license to redistribute those resources.
+Keep provenance when importing a catalog. No Claude executable or application
+bundle is distributed by this project.
+
+The JavaScript tokenizer in lib/vendor/js-tokens.mjs is js-tokens 10.0.0 by
+Simon Lydell. Its MIT license is included in lib/vendor/js-tokens.LICENSE.

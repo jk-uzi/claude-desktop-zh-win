@@ -1,0 +1,14 @@
+.catalogs/
+.handoff/
+node_modules/
+dist/
+*.log
+.DS_Store
+__pycache__/
+test-results.local.json
+
+.env
+.env.*
+!.env.example
+*.key
+*.pem
